@@ -7,6 +7,16 @@ was computed.
 
 ---
 
+## Try it live
+
+**[pairs-trading-cointegration.streamlit.app](https://pairs-trading-cointegration.streamlit.app)**
+
+An interactive version of this backtest — see the KO/PEP rejection for yourself,
+or test any pair of your own choosing against the same train/validation/test
+methodology.
+
+---
+
 ## Hypothesis
 
 Two economically related stocks share a long-run price relationship. If the pair
