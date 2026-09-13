@@ -6,3 +6,6 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# Build spec - internal working doc
+SPEC.md
