@@ -135,23 +135,16 @@ record(
 
 # ---------------------------------------------------------------- item 7
 # Inspect the actual figure main.py draws, not the source code.
-captured = {}
-original_close = main_mod.plt.close
-main_mod.plt.close = lambda fig: captured.setdefault("fig", fig)
-
-
 class Args:
     tickers = ["KO", "PEP"]
     capital = 100_000.0
     cost_bps = 5.0
-    output = "/tmp/_checklist_chart.png"
     seed = 9
 
 
-main_mod.plot_results(base, Args(), False, df)
-main_mod.plt.close = original_close
+fig = main_mod.plot_results(base, Args(), False, df)
 
-zaxis = captured["fig"].axes[1]
+zaxis = fig.axes[1]
 hlines = sorted(
     {round(float(l.get_ydata()[0]), 6) for l in zaxis.get_lines()
      if len(set(l.get_ydata())) == 1}
@@ -168,6 +161,7 @@ record(
     f"(entry +/-{tuned['entry_z']}, exit +/-{tuned['exit_z']}); "
     f"hardcoded defaults would have drawn {spec_default}",
 )
+main_mod.plt.close(fig)
 
 # ---------------------------------------------------------------- item 8
 _, grid = tune_parameters(df, base["beta"], val)

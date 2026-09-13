@@ -244,8 +244,43 @@ def tune_parameters(
         "exit_z": float(best["exit_z"]),
         "val_sharpe": float(best["sharpe"]),
         "val_trades": int(best["n_trades"]),
+        "is_tuned": True,
     }
     return best_params, results
+
+
+def _fixed_params_as_tuned(fixed_params):
+    """Shape caller-supplied parameters like `tune_parameters`' return value.
+
+    `val_sharpe` and `val_trades` are None rather than 0.0 because nothing was
+    selected on validation. A zero would read as a measured result, and the
+    validation-to-test gap is only meaningful when a search actually happened.
+    """
+    missing = {"window", "entry_z", "exit_z"} - set(fixed_params)
+    if missing:
+        raise ValueError(f"fixed_params is missing {sorted(missing)}")
+
+    window = int(fixed_params["window"])
+    entry_z = float(fixed_params["entry_z"])
+    exit_z = float(fixed_params["exit_z"])
+
+    # A window of 1 makes the rolling standard deviation NaN everywhere, and a
+    # negative threshold would trigger an entry on every bar.
+    if window < 2:
+        raise ValueError(f"fixed_params['window'] must be at least 2, got {window}")
+    if entry_z <= 0:
+        raise ValueError(f"fixed_params['entry_z'] must be positive, got {entry_z}")
+    if exit_z < 0:
+        raise ValueError(f"fixed_params['exit_z'] must not be negative, got {exit_z}")
+
+    return {
+        "window": window,
+        "entry_z": entry_z,
+        "exit_z": exit_z,
+        "val_sharpe": None,
+        "val_trades": None,
+        "is_tuned": False,
+    }
 
 
 def _warn_not_cointegrated(coint_pvalue, n_train):
@@ -271,6 +306,7 @@ def run_backtest(
     capital=100_000,
     notional_per_trade=20_000,
     require_cointegration=False,
+    fixed_params=None,
 ):
     """Full pipeline: split, fit on train, tune on validation, report on test.
 
@@ -280,6 +316,13 @@ def run_backtest(
     pair is unrelated, and seeing the P&L is informative. Switched on, it stops
     before trading, which is the behaviour the gate's rationale actually
     implies. Either way the failure is never silent.
+
+    `fixed_params` takes a dict of `window`/`entry_z`/`exit_z` and skips the
+    grid search, evaluating those values on test directly. Passing them does
+    not relax the cointegration gate: choosing parameters by hand is a
+    different decision from deciding the pair is worth trading, and only the
+    search is being replaced here. With the default of None the validation
+    slice is tuned on exactly as before.
     """
     train, val, test = split_data(df, train_frac, val_frac)
 
@@ -316,15 +359,20 @@ def run_backtest(
             }
         _warn_not_cointegrated(coint_pvalue, len(train))
 
-    tuned_params, tuning_results = tune_parameters(
-        df,
-        beta,
-        val,
-        min_trades=5,
-        cost_bps=cost_bps,
-        capital=capital,
-        notional_per_trade=notional_per_trade,
-    )
+    if fixed_params is None:
+        tuned_params, tuning_results = tune_parameters(
+            df,
+            beta,
+            val,
+            min_trades=5,
+            cost_bps=cost_bps,
+            capital=capital,
+            notional_per_trade=notional_per_trade,
+        )
+    else:
+        # No search ran, so there is no grid to report and no validation
+        # Sharpe to compare against. The validation slice simply goes unused.
+        tuned_params, tuning_results = _fixed_params_as_tuned(fixed_params), None
 
     spread = compute_spread(df["A"], df["B"], beta)
     zscore = rolling_zscore(spread, tuned_params["window"])

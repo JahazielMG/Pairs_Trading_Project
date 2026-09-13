@@ -8,5 +8,8 @@ matplotlib>=3.7
 # cointegrated pair if this is missing or the network is unavailable.
 yfinance>=0.2
 
+# Web front end (app.py). Not needed to run main.py from the command line.
+streamlit>=1.30
+
 # Verified against python 3.14.4 with pandas 3.0.5, numpy 2.5.3,
-# statsmodels 0.15.0, matplotlib 3.11.2, yfinance 1.7.0.
+# statsmodels 0.15.0, matplotlib 3.11.2, yfinance 1.7.0, streamlit 1.63.0.

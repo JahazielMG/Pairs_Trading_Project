@@ -98,7 +98,13 @@ def print_report(results, args, is_real):
 
 
 def plot_results(results, args, is_real, df):
-    """Three stacked panels: prices with split markers, OOS z-score, OOS equity."""
+    """Build three stacked panels: prices with splits, OOS z-score, OOS equity.
+
+    Returns the figure rather than writing it. The caller decides what to do
+    with it -- the CLI saves a PNG, the Streamlit app renders it in the page.
+    Saving to a fixed path in here would mean concurrent users of the deployed
+    app overwriting each other's chart between render and read.
+    """
     ticker_a, ticker_b = args.tickers
     label_a, label_b = (ticker_a, ticker_b) if is_real else ("A (sim)", "B (sim)")
     params = results["tuned_params"]
@@ -150,9 +156,7 @@ def plot_results(results, args, is_real, df):
     axes[2].legend(loc="best", fontsize=9)
 
     fig.tight_layout()
-    fig.savefig(args.output, dpi=120)
-    plt.close(fig)
-    print(f"Chart saved to {args.output}\n")
+    return fig
 
 
 def main():
@@ -169,7 +173,10 @@ def main():
     )
     print_report(results, args, is_real)
     if results["traded"]:
-        plot_results(results, args, is_real, df)
+        fig = plot_results(results, args, is_real, df)
+        fig.savefig(args.output, dpi=120)
+        plt.close(fig)
+        print(f"Chart saved to {args.output}\n")
 
 
 if __name__ == "__main__":
