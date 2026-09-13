@@ -1,0 +1,12 @@
+# Core: data handling, regression, and the cointegration test.
+pandas>=2.0
+numpy>=1.24
+statsmodels>=0.14
+matplotlib>=3.7
+
+# Optional: real market data. The backtest falls back to a simulated
+# cointegrated pair if this is missing or the network is unavailable.
+yfinance>=0.2
+
+# Verified against python 3.14.4 with pandas 3.0.5, numpy 2.5.3,
+# statsmodels 0.15.0, matplotlib 3.11.2, yfinance 1.7.0.
